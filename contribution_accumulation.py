@@ -174,8 +174,7 @@ if st.button("Run Forecast"):
                 if not valid:
                     st.error(message)
                 else:
-                    # Calculate years of service as of 12/31/2025
-                    years_of_service = relativedelta(datetime(2025, 12, 31), hire_date).years
+                    years_of_service = relativedelta(hire_date, dob).years
                     forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
             elif years_of_service_input:
                 years_of_service = int(years_of_service_input)

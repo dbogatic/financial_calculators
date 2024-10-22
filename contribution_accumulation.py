@@ -130,29 +130,6 @@ years_of_service_input = st.text_input("Enter Years of Service:", placeholder="e
 if hire_date_input and years_of_service_input:
     st.error("Please provide either a Hire Date or Years of Service, not both.")
 
-# Error handling for entering both Hire Date and Years of Service immediately
-if hire_date_input and years_of_service_input:
-    st.error("Please provide either a Hire Date or Years of Service, not both.")
-else:
-    if hire_date_input:
-        try:
-            hire_date = datetime.strptime(hire_date_input, "%m/%d/%Y")
-            valid, message = validate_hire_date(dob, hire_date)
-            if not valid:
-                st.error(message)
-            else:
-                # Calculate years of service as of 12/31/2025
-                years_of_service = relativedelta(datetime(2025, 12, 31), hire_date).years
-                forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
-        except ValueError as e:
-            st.error("Invalid Hire Date Format. Please enter in MM/DD/YYYY format.")
-    elif years_of_service_input:
-        try:
-            years_of_service = int(years_of_service_input)
-            forecast_contributions(dob, None, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
-        except ValueError:
-            st.error("Invalid Years of Service input. Please enter a valid number.")
-
 # Eligible Pay input with validation
 eligible_pay_input = st.text_input("Enter Eligible Pay (e.g., 100,000.00):", placeholder="100,000.00")
 if eligible_pay_input:
@@ -197,7 +174,8 @@ if st.button("Run Forecast"):
                 if not valid:
                     st.error(message)
                 else:
-                    years_of_service = relativedelta(hire_date, dob).years
+                    # Calculate years of service as of 12/31/2025
+                    years_of_service = relativedelta(datetime(2025, 12, 31), hire_date).years
                     forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
             elif years_of_service_input:
                 years_of_service = int(years_of_service_input)

@@ -34,7 +34,7 @@ def validate_hire_date(dob, hire_date):
     return True, ""
 
 # Forecast function
-def forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age):
+def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age):
     total_contributions = 0
     current_year = 2026
     reference_date = datetime(2026, 1, 1)
@@ -43,17 +43,9 @@ def forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_
 
     salary_2026 = eligible_pay * (1 + pay_growth_rate)  # Apply growth only once for 2025 -> 2026
 
-    # Calculate years of service from hire date
-    if hire_date:
-        years_of_service_on_2025 = relativedelta(datetime(2025, 12, 31), hire_date).years
-    else:
-        years_of_service_on_2025 = years_of_service
-
-    # Calculate the employee's age on 12/31/2025
-    age_on_2025 = relativedelta(datetime(2025, 12, 31), dob).years
-
-    # Check if Rule of 55 applies on 12/31/2025
-    rule_of_55_applies = age_on_2025 + years_of_service_on_2025 >= 55
+    end_of_2025 = datetime(2025, 12, 31)
+    age_on_2025 = relativedelta(end_of_2025, dob).years
+    yos_on_2025 = years_of_service
 
     data = []
     years = []
@@ -62,12 +54,7 @@ def forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_
     for year in range(years_until_target):
         age = reference_age + year
         regular_contribution_rate = calculate_contribution_rate(years_of_service)
-        
-        # Apply extra service credits only if Rule of 55 applies and between 2026-2030
-        if rule_of_55_applies and current_year >= 2026 and current_year <= 2030:
-            service_credit_rate = 0.04  # Extra 4% service credit
-        else:
-            service_credit_rate = 0.0  # No extra credits
+        service_credit_rate = apply_rule_of_55(age_on_2025, yos_on_2025, current_year)
 
         annual_regular_contribution = salary_2026 * regular_contribution_rate
         annual_service_credits = salary_2026 * service_credit_rate
@@ -92,7 +79,6 @@ def forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_
         years.append(current_year)
         contributions.append(total_contributions)
 
-        # Increment years of service for each year
         years_of_service += 1
         current_year += 1
 
@@ -143,6 +129,29 @@ years_of_service_input = st.text_input("Enter Years of Service:", placeholder="e
 # Error handling for entering both Hire Date and Years of Service immediately
 if hire_date_input and years_of_service_input:
     st.error("Please provide either a Hire Date or Years of Service, not both.")
+
+# Error handling for entering both Hire Date and Years of Service immediately
+if hire_date_input and years_of_service_input:
+    st.error("Please provide either a Hire Date or Years of Service, not both.")
+else:
+    if hire_date_input:
+        try:
+            hire_date = datetime.strptime(hire_date_input, "%m/%d/%Y")
+            valid, message = validate_hire_date(dob, hire_date)
+            if not valid:
+                st.error(message)
+            else:
+                # Calculate years of service as of 12/31/2025
+                years_of_service = relativedelta(datetime(2025, 12, 31), hire_date).years
+                forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
+        except ValueError as e:
+            st.error("Invalid Hire Date Format. Please enter in MM/DD/YYYY format.")
+    elif years_of_service_input:
+        try:
+            years_of_service = int(years_of_service_input)
+            forecast_contributions(dob, None, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
+        except ValueError:
+            st.error("Invalid Years of Service input. Please enter a valid number.")
 
 # Eligible Pay input with validation
 eligible_pay_input = st.text_input("Enter Eligible Pay (e.g., 100,000.00):", placeholder="100,000.00")

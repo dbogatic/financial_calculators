@@ -34,7 +34,7 @@ def validate_hire_date(dob, hire_date):
     return True, ""
 
 # Forecast function
-def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age):
+def forecast_contributions(dob, hire_date, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age):
     total_contributions = 0
     current_year = 2026
     reference_date = datetime(2026, 1, 1)
@@ -43,9 +43,17 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
 
     salary_2026 = eligible_pay * (1 + pay_growth_rate)  # Apply growth only once for 2025 -> 2026
 
-    end_of_2025 = datetime(2025, 12, 31)
-    age_on_2025 = relativedelta(end_of_2025, dob).years
-    yos_on_2025 = years_of_service
+    # Calculate years of service from hire date
+    if hire_date:
+        years_of_service_on_2025 = relativedelta(datetime(2025, 12, 31), hire_date).years
+    else:
+        years_of_service_on_2025 = years_of_service
+
+    # Calculate the employee's age on 12/31/2025
+    age_on_2025 = relativedelta(datetime(2025, 12, 31), dob).years
+
+    # Check if Rule of 55 applies on 12/31/2025
+    rule_of_55_applies = age_on_2025 + years_of_service_on_2025 >= 55
 
     data = []
     years = []
@@ -54,7 +62,12 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
     for year in range(years_until_target):
         age = reference_age + year
         regular_contribution_rate = calculate_contribution_rate(years_of_service)
-        service_credit_rate = apply_rule_of_55(age_on_2025, yos_on_2025, current_year)
+        
+        # Apply extra service credits only if Rule of 55 applies and between 2026-2030
+        if rule_of_55_applies and current_year >= 2026 and current_year <= 2030:
+            service_credit_rate = 0.04  # Extra 4% service credit
+        else:
+            service_credit_rate = 0.0  # No extra credits
 
         annual_regular_contribution = salary_2026 * regular_contribution_rate
         annual_service_credits = salary_2026 * service_credit_rate
@@ -79,6 +92,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
         years.append(current_year)
         contributions.append(total_contributions)
 
+        # Increment years of service for each year
         years_of_service += 1
         current_year += 1
 

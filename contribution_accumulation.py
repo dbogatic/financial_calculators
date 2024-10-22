@@ -20,7 +20,7 @@ def calculate_contribution_rate(years_of_service):
     else:
         return 0.10
 
-# Function to apply extra credits based on Rule of 55
+# Function to check Rule of 55 eligibility as of December 31, 2025
 def apply_rule_of_55(age_on_2025, yos_on_2025, current_year):
     if age_on_2025 + yos_on_2025 >= 55 and current_year >= 2026 and current_year <= 2030:
         return 0.04  # Extra 4% for 5 years (2026–2030)
@@ -34,26 +34,38 @@ def validate_hire_date(dob, hire_date):
     return True, ""
 
 # Forecast function
-def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age):
+def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, hire_date=None):
     total_contributions = 0
     current_year = 2026
     reference_date = datetime(2026, 1, 1)
     reference_age = relativedelta(reference_date, dob).years
     years_until_target = target_age - reference_age
 
-    salary_2026 = eligible_pay * (1 + pay_growth_rate)  # Apply growth only once for 2025 -> 2026
+    # Check if target age is valid (must be greater than current age in 2026)
+    if years_until_target <= 0:
+        st.error(f"Target age {target_age} is less than or equal to your age in 2026 ({reference_age}). Please choose a valid target age.")
+        return
+
+    salary_2026 = eligible_pay * (1 + pay_growth_rate)
 
     end_of_2025 = datetime(2025, 12, 31)
     age_on_2025 = relativedelta(end_of_2025, dob).years
-    yos_on_2025 = years_of_service
+
+    # Calculate years of service correctly based on hire date if provided
+    if hire_date:
+        yos_on_2025 = relativedelta(end_of_2025, hire_date).years  # Years of service as of 2025
+        yos_on_2026 = relativedelta(datetime(2026, 12, 31), hire_date).years  # Years of service at the end of 2026
+    else:
+        yos_on_2025 = years_of_service
+        yos_on_2026 = years_of_service + 1  # Increment for the next year
 
     data = []
     years = []
     contributions = []
 
-    for year in range(years_until_target):
+    for year in range(years_until_target + 1):  # Adjust loop to include the target age year
         age = reference_age + year
-        regular_contribution_rate = calculate_contribution_rate(years_of_service)
+        regular_contribution_rate = calculate_contribution_rate(yos_on_2026)
         service_credit_rate = apply_rule_of_55(age_on_2025, yos_on_2025, current_year)
 
         annual_regular_contribution = salary_2026 * regular_contribution_rate
@@ -65,9 +77,9 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
         salary_2026 *= (1 + pay_growth_rate)
 
         data.append({
-            'Year': str(current_year),  # Convert Year to string to prevent commas
+            'Year': str(current_year),
             'Age': age,
-            'Years of Service': years_of_service,
+            'Years of Service': yos_on_2026,
             'Salary': salary_2026,
             'Regular Contribution Rate (%)': regular_contribution_rate * 100,
             'Service Credit Rate (%)': service_credit_rate * 100,
@@ -79,7 +91,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
         years.append(current_year)
         contributions.append(total_contributions)
 
-        years_of_service += 1
+        yos_on_2026 += 1  # Increment years of service for the next year
         current_year += 1
 
     df = pd.DataFrame(data)
@@ -174,8 +186,8 @@ if st.button("Run Forecast"):
                 if not valid:
                     st.error(message)
                 else:
-                    years_of_service = relativedelta(hire_date, dob).years
-                    forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)
+                    years_of_service = relativedelta(datetime(2026, 1, 1), hire_date).years  # Calculate years of service as of 2026
+                    forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, hire_date=hire_date)
             elif years_of_service_input:
                 years_of_service = int(years_of_service_input)
                 forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age)

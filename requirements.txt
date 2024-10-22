@@ -5,7 +5,7 @@ appdirs==1.4.4
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 arrow==1.3.0
-asttokens @ file:///home/conda/feedstock_root/build_artifacts/asttokens_1698341106958/work
+asttokens==2.0.5  # Ensure this is the correct version from PyPI
 attrs==23.2.0
 Babel==2.14.0
 beautifulsoup4==4.12.3
@@ -16,15 +16,15 @@ certifi==2024.2.2
 cffi==1.16.0
 charset-normalizer==3.3.2
 click==8.1.7
-colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1666700638685/work
-comm @ file:///home/conda/feedstock_root/build_artifacts/comm_1704278392174/work
+colorama==0.4.6  # Ensure this is the correct version from PyPI
+comm==0.1.2  # Ensure this is the correct version from PyPI
 contourpy==1.2.0
 cycler==0.12.1
-debugpy @ file:///C:/b/abs_c0y1fjipt2/croot/debugpy_1690906864587/work
-decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1641555617451/work
+debugpy==1.6.7  # Ensure this is the correct version from PyPI
+decorator==5.1.1  # Ensure this is the correct version from PyPI
 defusedxml==0.7.1
-exceptiongroup @ file:///home/conda/feedstock_root/build_artifacts/exceptiongroup_1704921103267/work
-executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1698579936712/work
+exceptiongroup==1.1.2  # Ensure this is the correct version from PyPI
+executing==1.2.0  # Ensure this is the correct version from PyPI
 fastjsonschema==2.19.1
 fonttools==4.49.0
 fqdn==1.5.1
@@ -34,11 +34,11 @@ gitdb==4.0.11
 GitPython==3.1.42
 html5lib==1.1
 idna==3.6
-importlib-metadata @ file:///home/conda/feedstock_root/build_artifacts/importlib-metadata_1703269254275/work
-ipykernel @ file:///D:/bld/ipykernel_1707326433944/work
-ipython @ file:///D:/bld/ipython_1706795789991/work
+importlib-metadata==6.0.0  # Ensure this is the correct version from PyPI
+ipykernel==6.21.1  # Ensure this is the correct version from PyPI
+ipython==8.10.0  # Ensure this is the correct version from PyPI
 isoduration==20.11.0
-jedi @ file:///home/conda/feedstock_root/build_artifacts/jedi_1696326070614/work
+jedi==0.18.2  # Ensure this is the correct version from PyPI
 Jinja2==3.1.3
 joblib==1.3.2
 json5==0.9.14
@@ -46,8 +46,8 @@ jsonpointer==2.4
 jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
 jupyter-events==0.9.0
-jupyter_client @ file:///home/conda/feedstock_root/build_artifacts/jupyter_client_1699283905679/work
-jupyter_core @ file:///D:/bld/jupyter_core_1704727252411/work
+jupyter_client==7.4.9  # Ensure this is the correct version from PyPI
+jupyter_core==5.1.0  # Ensure this is the correct version from PyPI
 jupyter_server==2.12.5
 jupyter_server_terminals==0.5.2
 jupyterlab_pygments==0.3.0
@@ -57,38 +57,38 @@ lxml==5.1.0
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 matplotlib==3.9.2
-matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-inline_1660814786464/work
+matplotlib-inline==0.1.6  # Ensure this is the correct version from PyPI
 mdurl==0.1.2
 mistune==3.0.2
 multitasking==0.0.11
 nbclient==0.7.4
 nbconvert==7.16.0
 nbformat==5.9.2
-nest_asyncio @ file:///home/conda/feedstock_root/build_artifacts/nest-asyncio_1705850609492/work
+nest_asyncio==1.5.6  # Ensure this is the correct version from PyPI
 numpy==1.26.4
 overrides==7.7.0
-packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1696202382185/work
+packaging==23.1  # Ensure this is the correct version from PyPI
 pandas==2.2.0
 pandocfilters==1.5.1
-parso @ file:///home/conda/feedstock_root/build_artifacts/parso_1638334955874/work
+parso==0.8.3  # Ensure this is the correct version from PyPI
 peewee==3.17.1
 pefile==2023.2.7
-pickleshare @ file:///home/conda/feedstock_root/build_artifacts/pickleshare_1602536217715/work
+pickleshare==0.7.5  # Ensure this is the correct version from PyPI
 pillow==10.2.0
-platformdirs @ file:///home/conda/feedstock_root/build_artifacts/platformdirs_1706713388748/work
+platformdirs==3.10.0  # Ensure this is the correct version from PyPI
 prometheus_client==0.20.0
-prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1702399386289/work
+prompt-toolkit==3.0.39  # Ensure this is the correct version from PyPI
 protobuf==4.25.3
-psutil @ file:///C:/ci_311_rebuilds/psutil_1679005906571/work
-pure-eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1642875951954/work
+psutil==5.9.5  # Ensure this is the correct version from PyPI
+pure-eval==0.2.2  # Ensure this is the correct version from PyPI
 pyarrow==15.0.0
 pycparser==2.21
 pydeck==0.8.1b0
-Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1700607939962/work
+Pygments==2.16.1  # Ensure this is the correct version from PyPI
 pyinstaller==6.11.0
 pyinstaller-hooks-contrib==2024.9
 pyparsing==3.1.1
-python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1626286286081/work
+python-dateutil==2.8.2  # Ensure this is the correct version from PyPI
 python-dotenv==1.0.1
 python-json-logger==2.0.7
 pytz==2024.1
@@ -96,7 +96,7 @@ pywin32==305.1
 pywin32-ctypes==0.2.3
 pywinpty==2.0.12
 PyYAML==6.0.1
-pyzmq @ file:///C:/b/abs_89aq69t0up/croot/pyzmq_1705605705281/work
+pyzmq==25.1.0  # Ensure this is the correct version from PyPI
 referencing==0.33.0
 requests==2.31.0
 rfc3339-validator==0.1.4
@@ -107,11 +107,11 @@ scikit-learn==1.4.1.post1
 scipy==1.12.0
 seaborn==0.13.2
 Send2Trash==1.8.2
-six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
+six==1.16.0  # Ensure this is the correct version from PyPI
 smmap==5.0.1
 sniffio==1.3.0
 soupsieve==2.5
-stack-data @ file:///home/conda/feedstock_root/build_artifacts/stack_data_1669632077133/work
+stack-data==0.6.2  # Ensure this is the correct version from PyPI
 streamlit==1.31.1
 tenacity==8.2.3
 terminado==0.18.0
@@ -119,10 +119,10 @@ threadpoolctl==3.3.0
 tinycss2==1.2.1
 toml==0.10.2
 toolz==0.12.1
-tornado @ file:///C:/b/abs_0cbrstidzg/croot/tornado_1696937003724/work
-traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1704212992681/work
+tornado==6.3.3  # Ensure this is the correct version from PyPI
+traitlets==5.10.0  # Ensure this is the correct version from PyPI
 types-python-dateutil==2.8.19.20240106
-typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1702176139754/work
+typing_extensions==4.8.0  # Ensure this is the correct version from PyPI
 tzdata==2024.1
 tzlocal==5.2
 uri-template==1.3.0
@@ -130,10 +130,10 @@ urllib3==2.2.0
 validators==0.22.0
 voila==0.5.5
 watchdog==4.0.0
-wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1704731205417/work
+wcwidth==0.2.6  # Ensure this is the correct version from PyPI
 webcolors==1.13
 webencodings==0.5.1
 websocket-client==1.7.0
 websockets==12.0
 yfinance==0.2.36
-zipp @ file:///home/conda/feedstock_root/build_artifacts/zipp_1695255097490/work
+zipp==3.17.0  # Ensure this is the correct version from PyPI

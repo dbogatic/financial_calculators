@@ -33,15 +33,26 @@ def validate_hire_date(dob, hire_date):
         return False, f"Error: Hire date shows the person started working at age {age_at_hire}. Minimum working age is 16."
     return True, ""
 
-# Forecast function
 def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, hire_date=None):
+    # Ensure dob and hire_date are datetime objects
+    if isinstance(dob, str):
+        dob = datetime.strptime(dob, "%Y-%m-%d")
+    if hire_date and isinstance(hire_date, str):
+        hire_date = datetime.strptime(hire_date, "%Y-%m-%d")
+
+    # Validate hire date if provided
+    if hire_date:
+        valid_hire_date, error_message = validate_hire_date(dob, hire_date)
+        if not valid_hire_date:
+            st.error(error_message)
+            return
+
     total_contributions = 0
     current_year = 2026
     reference_date = datetime(2026, 1, 1)
     reference_age = relativedelta(reference_date, dob).years
     years_until_target = target_age - reference_age
 
-    # Check if target age is valid (must be greater than current age in 2026)
     if years_until_target <= 0:
         st.error(f"Target age {target_age} is less than or equal to your age in 2026 ({reference_age}). Please choose a valid target age.")
         return
@@ -51,13 +62,15 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
     end_of_2025 = datetime(2025, 12, 31)
     age_on_2025 = relativedelta(end_of_2025, dob).years
 
-    # Calculate years of service correctly based on hire date if provided
+    # Calculate years of service as of now
+    today = datetime.now()
     if hire_date:
-        yos_on_2025 = relativedelta(end_of_2025, hire_date).years  # Years of service as of 2025
-        yos_on_2026 = relativedelta(datetime(2026, 12, 31), hire_date).years  # Years of service at the end of 2026
+        yos_now = relativedelta(today, hire_date).years
     else:
-        yos_on_2025 = years_of_service
-        yos_on_2026 = years_of_service + 1  # Increment for the next year
+        yos_now = years_of_service
+
+    # Calculate years of service as of 2026
+    yos_on_2026 = yos_now + (2026 - today.year)
 
     data = []
     years = []
@@ -66,7 +79,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
     for year in range(years_until_target + 1):  # Adjust loop to include the target age year
         age = reference_age + year
         regular_contribution_rate = calculate_contribution_rate(yos_on_2026)
-        service_credit_rate = apply_rule_of_55(age_on_2025, yos_on_2025, current_year)
+        service_credit_rate = apply_rule_of_55(age_on_2025, yos_now, current_year)
 
         annual_regular_contribution = salary_2026 * regular_contribution_rate
         annual_service_credits = salary_2026 * service_credit_rate
@@ -77,7 +90,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
         salary_2026 *= (1 + pay_growth_rate)
 
         data.append({
-            'Year': str(current_year),
+            'Year': str(current_year),  # Convert Year to string to prevent commas
             'Age': age,
             'Years of Service': yos_on_2026,
             'Salary': salary_2026,
@@ -91,8 +104,8 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
         years.append(current_year)
         contributions.append(total_contributions)
 
-        yos_on_2026 += 1  # Increment years of service for the next year
         current_year += 1
+        yos_on_2026 += 1  # Increment years of service for each year in the loop
 
     df = pd.DataFrame(data)
 

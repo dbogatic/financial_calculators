@@ -191,7 +191,7 @@ if eligible_pay_input:
 starting_balance_input = st.text_input("Enter Starting Balance:", placeholder="e.g., 50,000.00 or 0.00 if none")
 if starting_balance_input:
     if not re.match(r'^\d{1,3}(,\d{3})*\.\d{2}$', starting_balance_input):
-        st.error("Invalid Starting Balance Format. Please enter in the format 50,000.00")
+        st.error("Invalid Starting Balance Format. Please enter in the format 50,000.00 or 0.00")
     else:
         starting_balance = float(starting_balance_input.replace(',', '').replace('$', ''))
 

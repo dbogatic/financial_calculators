@@ -48,78 +48,88 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
             return
 
     total_contributions = 0
-    current_year = 2026
-    reference_date = datetime(2026, 1, 1)
-    reference_age = relativedelta(reference_date, dob).years
+    current_year = datetime.now().year  # Dynamically get the current year
+    reference_age = relativedelta(datetime(current_year, 1, 1), dob).years
     years_until_target = target_age - reference_age
 
     if years_until_target <= 0:
-        st.error(f"Target age {target_age} is less than or equal to your age in 2026 ({reference_age}). Please choose a valid target age.")
+        st.error(f"Target age {target_age} is less than or equal to your age in {current_year} ({reference_age}). Please choose a valid target age.")
         return
 
-    salary_2026 = eligible_pay * (1 + pay_growth_rate)
+    # Initial salary is the eligible pay for the current year, no inflation yet
+    salary = eligible_pay
 
     end_of_2025 = datetime(2025, 12, 31)
     age_on_2025 = relativedelta(end_of_2025, dob).years
 
-    # Calculate years of service as of now
+    # Calculate years of service as of now (for Year Now)
     today = datetime.now()
     if hire_date:
         yos_now = relativedelta(today, hire_date).years
     else:
         yos_now = years_of_service
 
-    # Calculate years of service as of 2026
-    yos_on_2026 = yos_now + (2026 - today.year)
-
     data = []
     years = []
     contributions = []
 
-    for year in range(years_until_target + 1):  # Adjust loop to include the target age year
-        age = reference_age + year
-        regular_contribution_rate = calculate_contribution_rate(yos_on_2026)
-        service_credit_rate = apply_rule_of_55(age_on_2025, yos_now, current_year)
+    # Start the loop from Year Now and progress to the target year
+    for year in range(current_year, current_year + years_until_target + 1):
+        age = reference_age + (year - current_year)
 
-        annual_regular_contribution = salary_2026 * regular_contribution_rate
-        annual_service_credits = salary_2026 * service_credit_rate
-        annual_total_contribution = annual_regular_contribution + annual_service_credits
+        # Calculate contribution rate based on years of service
+        regular_contribution_rate = calculate_contribution_rate(yos_now)
+        service_credit_rate = apply_rule_of_55(age_on_2025, yos_now, year)
 
-        total_contributions += annual_total_contribution
+        # No contributions until 2026, only salary inflation before that
+        if year >= 2026:
+            annual_regular_contribution = salary * regular_contribution_rate
+            annual_service_credits = salary * service_credit_rate
+            annual_total_contribution = annual_regular_contribution + annual_service_credits
+            total_contributions += annual_total_contribution
+        else:
+            annual_regular_contribution = 0
+            annual_service_credits = 0
+            annual_total_contribution = 0
+
+        # Apply rate of return on accumulated assets
         total_contributions *= (1 + rate_of_return)
-        salary_2026 *= (1 + pay_growth_rate)
 
+        # Append data for the current year
         data.append({
-            'Year': str(current_year),  # Convert Year to string to prevent commas
+            'Year': str(year),
             'Age': age,
-            'Years of Service': yos_on_2026,
-            'Salary': salary_2026,
-            'Regular Contribution Rate (%)': regular_contribution_rate * 100,
-            'Service Credit Rate (%)': service_credit_rate * 100,
+            'Years of Service': yos_now,
+            'Salary': salary,
+            'Regular Contribution Rate (%)': regular_contribution_rate * 100 if year >= 2026 else 0,
+            'Service Credit Rate (%)': service_credit_rate * 100 if year >= 2026 else 0,
             'Annual Regular Contribution': annual_regular_contribution,
             'Annual Service Credits': annual_service_credits,
             'Total Accumulated Assets': total_contributions
         })
 
-        years.append(current_year)
+        # Inflate the salary for the next year (but not for the current year)
+        if year >= current_year:
+            salary *= (1 + pay_growth_rate)
+
+        yos_now += 1  # Increment years of service for the next year
+        years.append(year)
         contributions.append(total_contributions)
 
-        current_year += 1
-        yos_on_2026 += 1  # Increment years of service for each year in the loop
-
+    # Convert data to a DataFrame
     df = pd.DataFrame(data)
 
-    # Display DataFrame with better formatting
+    # Format numerical columns for display
     df['Salary'] = df['Salary'].map('${:,.2f}'.format)
     df['Annual Regular Contribution'] = df['Annual Regular Contribution'].map('${:,.2f}'.format)
     df['Annual Service Credits'] = df['Annual Service Credits'].map('${:,.2f}'.format)
     df['Total Accumulated Assets'] = df['Total Accumulated Assets'].map('${:,.2f}'.format)
 
-    # Display formatted DataFrame in Streamlit
+    # Display DataFrame in Streamlit
     st.write("### Contribution Growth Forecast Table")
     st.dataframe(df)
 
-    # Plotting the results
+    # Plot the results
     plt.figure(figsize=(10, 5))
     plt.plot(years, contributions, marker='o')
     plt.title("Projected Total Contribution Growth Over Time")
@@ -133,7 +143,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
 st.title("Retirement Contribution Growth Forecast")
 
 # Date of Birth input with validation
-dob_input = st.text_input("Enter Date of Birth (MM/DD/YYYY):", placeholder="MM/DD/YYYY")
+dob_input = st.text_input("Enter Date of Birth:", placeholder="MM/DD/YYYY")
 if dob_input:
     try:
         dob = datetime.strptime(dob_input, "%m/%d/%Y")
@@ -141,8 +151,7 @@ if dob_input:
         st.error("Invalid Date Format. Please enter in MM/DD/YYYY format.")
 
 # Input fields for Hire Date and Years of Service with validation
-st.write("**Please enter either Hire Date or Years of Service (not both):**")
-hire_date_input = st.text_input("Enter Hire Date (MM/DD/YYYY):", placeholder="MM/DD/YYYY or leave blank if entering Years of Service")
+hire_date_input = st.text_input("Enter Hire Date:", placeholder="MM/DD/YYYY or leave blank if entering Years of Service")
 if hire_date_input:
     try:
         hire_date = datetime.strptime(hire_date_input, "%m/%d/%Y")
@@ -156,7 +165,7 @@ if hire_date_input and years_of_service_input:
     st.error("Please provide either a Hire Date or Years of Service, not both.")
 
 # Eligible Pay input with validation
-eligible_pay_input = st.text_input("Enter Eligible Pay (e.g., 100,000.00):", placeholder="100,000.00")
+eligible_pay_input = st.text_input("Enter Eligible Pay:", placeholder="100,000.00")
 if eligible_pay_input:
     if not re.match(r'^\d{1,3}(,\d{3})*\.\d{2}$', eligible_pay_input):
         st.error("Invalid Eligible Pay Format. Please enter in the format 100,000.00")
@@ -164,7 +173,7 @@ if eligible_pay_input:
         eligible_pay = float(eligible_pay_input.replace(',', '').replace('$', ''))
 
 # Rate of Return input with validation
-rate_of_return_input = st.text_input("Enter Rate of Return (e.g., 5.50):", placeholder="e.g., 5.50")
+rate_of_return_input = st.text_input("Enter Rate of Return:", placeholder="e.g., 5.50")
 if rate_of_return_input:
     if not re.match(r'^\d+\.\d{2}$', rate_of_return_input):
         st.error("Invalid Rate of Return Format. Please enter in the format 5.50")
@@ -172,7 +181,7 @@ if rate_of_return_input:
         rate_of_return = float(rate_of_return_input) / 100
 
 # Pay Growth Rate input with validation
-pay_growth_rate_input = st.text_input("Enter Pay Growth Rate (e.g., 3.00):", placeholder="e.g., 3.00")
+pay_growth_rate_input = st.text_input("Enter Pay Growth Rate:", placeholder="e.g., 3.00")
 if pay_growth_rate_input:
     if not re.match(r'^\d+\.\d{2}$', pay_growth_rate_input):
         st.error("Invalid Pay Growth Rate Format. Please enter in the format 3.00")

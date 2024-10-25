@@ -49,22 +49,22 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
 
     # Initialize total contributions with the starting balance
     total_contributions = starting_balance
-    current_year = datetime.now().year  # Dynamically get the current year
-    reference_age = relativedelta(datetime(current_year, 1, 1), dob).years
+    today = datetime.now()  # Dynamically get today's date
+    current_year = today.year
+    reference_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))  # Determine if birthday has passed
     years_until_target = target_age - reference_age
 
     if years_until_target <= 0:
         st.error(f"Target age {target_age} is less than or equal to your age in {current_year} ({reference_age}). Please choose a valid target age.")
         return
 
-    # Initial salary is the eligible pay for the current year, no inflation yet
+    # Initial salary is the eligible pay for the current year
     salary = eligible_pay
 
     end_of_2025 = datetime(2025, 12, 31)
     age_on_2025 = relativedelta(end_of_2025, dob).years
 
     # Calculate years of service as of now (for Year Now)
-    today = datetime.now()
     if hire_date:
         yos_now = relativedelta(today, hire_date).years
     else:
@@ -76,6 +76,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
 
     # Start the loop from Year Now and progress to the target year
     for year in range(current_year, current_year + years_until_target + 1):
+        # Update age for each year dynamically
         age = reference_age + (year - current_year)
 
         # Calculate contribution rate based on years of service
@@ -146,7 +147,7 @@ def forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, 
 st.title("Retirement Contribution Growth Forecast")
 
 # Date of Birth input with validation
-dob_input = st.text_input("Enter Date of Birth (MM/DD/YYYY):", placeholder="MM/DD/YYYY")
+dob_input = st.text_input("Enter Date of Birth:", placeholder="MM/DD/YYYY")
 if dob_input:
     try:
         dob = datetime.strptime(dob_input, "%m/%d/%Y")
@@ -155,29 +156,22 @@ if dob_input:
 
 # Input fields for Hire Date and Years of Service with validation
 hire_date_input = st.text_input("Enter Hire Date:", placeholder="MM/DD/YYYY or leave blank if entering Years of Service")
-years_of_service_input = st.text_input("Enter Years of Service:", placeholder="e.g., 10 or leave blank if entering Hire Date")
-
-# Validate both Hire Date and DOB, and ensure hire age is at least 16
 if hire_date_input:
     try:
         hire_date = datetime.strptime(hire_date_input, "%m/%d/%Y")
-        if dob_input:
-            dob = datetime.strptime(dob_input, "%m/%d/%Y")
-            valid_hire_date, error_message = validate_hire_date(dob, hire_date)
-            if not valid_hire_date:
-                st.error(error_message)
     except ValueError:
         st.error("Invalid Hire Date Format. Please enter in MM/DD/YYYY format.")
-
-# Validate Years of Service as an integer
+        
+years_of_service_input = st.text_input("Enter Years of Service:", placeholder="e.g., 10 or leave blank if entering Hire Date")
 if years_of_service_input:
-    if hire_date_input:
-        st.error("Please provide either a Hire Date or Years of Service, not both.")
-    else:
-        try:
-            years_of_service = int(years_of_service_input)  # Ensure only integers are accepted
-        except ValueError:
-            st.error("Years of Service must be a whole number. Please enter a valid integer.")
+    try:
+        years_of_service = int(years_of_service_input)  # Ensure only integers are accepted
+    except ValueError:
+        st.error("Years of Service must be an integer. Please enter a valid whole number.")
+
+# Error handling for entering both Hire Date and Years of Service immediately
+if hire_date_input and years_of_service_input:
+    st.error("Please provide either a Hire Date or Years of Service, not both.")
 
 # Eligible Pay input with validation
 eligible_pay_input = st.text_input("Enter Eligible Pay:", placeholder="e.g., 100,000.00")
@@ -188,10 +182,10 @@ if eligible_pay_input:
         eligible_pay = float(eligible_pay_input.replace(',', '').replace('$', ''))
 
 # Starting Balance input
-starting_balance_input = st.text_input("Enter Starting Balance:", placeholder="e.g., 50,000.00 or 0.00 if none")
+starting_balance_input = st.text_input("Enter Starting Balance:", placeholder="e.g., 50,000.00")
 if starting_balance_input:
     if not re.match(r'^\d{1,3}(,\d{3})*\.\d{2}$', starting_balance_input):
-        st.error("Invalid Starting Balance Format. Please enter in the format 50,000.00 or 0.00")
+        st.error("Invalid Starting Balance Format. Please enter in the format 50,000.00")
     else:
         starting_balance = float(starting_balance_input.replace(',', '').replace('$', ''))
 
@@ -221,18 +215,22 @@ if target_age_input:
 
 # Process inputs and run the forecast if valid inputs are provided
 if st.button("Run Forecast"):
-    try:
-        if hire_date_input:
-            valid, message = validate_hire_date(dob, hire_date)
-            if not valid:
-                st.error(message)
+    if hire_date_input and years_of_service_input:
+        st.error("Please provide either a Hire Date or Years of Service, not both.")
+    else:
+        try:
+            if hire_date_input:
+                hire_date = datetime.strptime(hire_date_input, "%m/%d/%Y")
+                valid, message = validate_hire_date(dob, hire_date)
+                if not valid:
+                    st.error(message)
+                else:
+                    years_of_service = relativedelta(datetime(2026, 1, 1), hire_date).years  # Calculate years of service as of 2026
+                    forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, starting_balance, hire_date=hire_date)
+            elif years_of_service_input:
+                years_of_service = int(years_of_service_input)  # Ensure only integers are accepted
+                forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, starting_balance)
             else:
-                years_of_service = relativedelta(datetime(2026, 1, 1), hire_date).years  # Calculate years of service as of 2026
-                forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, starting_balance, hire_date=hire_date)
-        elif years_of_service_input:
-            years_of_service = int(years_of_service_input)  # Ensure only integers are accepted
-            forecast_contributions(dob, years_of_service, eligible_pay, rate_of_return, pay_growth_rate, target_age, starting_balance)
-        else:
-            st.error("Please provide either a Hire Date or Years of Service.")
-    except ValueError as e:
-        st.error(f"Error: {e}")
+                st.error("Please provide either a Hire Date or Years of Service.")
+        except ValueError as e:
+            st.error(f"Error: {e}")

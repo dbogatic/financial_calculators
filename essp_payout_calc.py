@@ -79,7 +79,6 @@ def main():
 
     # == Global Inputs ==
     st.header("Global Inputs")
-    # Restrict returns to range [0, 1] for demonstration purposes
     cola = st.number_input("COLA", value=0.03, min_value=0.0, max_value=1.0, step=0.01, format="%.3f")
     pre_return = st.number_input("Pre-Retirement Return", value=0.07, min_value=0.0, max_value=1.0, step=0.01, format="%.3f")
     post_return = st.number_input("Post-Retirement Return", value=0.05, min_value=0.0, max_value=1.0, step=0.01, format="%.3f")
@@ -90,6 +89,7 @@ def main():
     # == Bucket Data ==
     st.header("ESSP Bucket Inputs")
     st.write("Enter or edit data for each bucket below.")
+
     default_data = {
         "name": [
             "Bucket 1", 
@@ -106,15 +106,13 @@ def main():
 
     default_bucket_df = pd.DataFrame(default_data)
 
-    # data_editor for interactive editing (Streamlit 1.19+).
+    # Fixed rows; no num_rows="dynamic"
     bucket_df = st.data_editor(
         default_bucket_df,
         key="bucket_data_editor",
-        num_rows="dynamic",  # Allows adding/removing rows if you want
     )
 
     st.markdown(
-        "Use the **+** or **-** buttons to add/remove rows if needed. "
         "All numeric columns must be valid numbers; no text or blank cells."
     )
 
@@ -136,7 +134,7 @@ def main():
             )
             st.stop()
 
-        # Additional checks: no negative or zero payout year, no negative balances/contributions
+        # Additional checks
         invalid_rows_2 = bucket_df.query("starting_balance < 0 or starting_contribution < 0 or payout_year <= 0")
         if len(invalid_rows_2) > 0:
             st.error(
@@ -181,7 +179,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
 

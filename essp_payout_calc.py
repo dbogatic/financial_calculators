@@ -16,7 +16,7 @@ def run_calculation(
     Calculate year-by-year balances and final payouts for each bucket.
     
     For Amount mode:
-      - 'starting_contribution' is interpreted as a dollar amount for the current year,
+      - 'starting_contribution' is interpreted as the dollar amount for the current year,
         which grows by COLA each year.
     
     For Percent mode:
@@ -60,7 +60,6 @@ def run_calculation(
                 age += 1
 
             row[b["name"]] = round(balance, 2) if yr < b["payout_year"] else None
-
         results.append(row)
 
     balances_df = pd.DataFrame(results)
@@ -111,42 +110,37 @@ def create_payout_df(buckets, cola, pre_return, post_return, retirement_age,
 def main():
     st.title("ESSP Bucket Growth Calculator")
 
-    # === Global Inputs (for user entry; no output formatting applied in the input phase) ===
+    # === Global Inputs (raw numeric entry) ===
     st.header("Global Inputs")
-    cola = st.number_input("COLA (annual growth rate)", value=0.03,
-                           min_value=0.0, max_value=1.0,
-                           step=0.01, format="%.3f")
-    pre_return = st.number_input("Pre-Retirement Return", value=0.07,
-                                 min_value=0.0, max_value=1.0,
-                                 step=0.01, format="%.3f")
-    post_return = st.number_input("Post-Retirement Return", value=0.05,
-                                  min_value=0.0, max_value=1.0,
-                                  step=0.01, format="%.3f")
+    current_salary = st.number_input("Current Salary", value=100000.0, min_value=0.0)
+    cola = st.number_input("COLA (annual growth rate)", value=0.03, min_value=0.0, max_value=1.0, step=0.01)
+    pre_return = st.number_input("Pre-Retirement Return", value=0.07, min_value=0.0, max_value=1.0, step=0.01)
+    post_return = st.number_input("Post-Retirement Return", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
     retirement_age = st.number_input("Retirement Age", value=62, min_value=0, max_value=120, step=1)
     current_age = st.number_input("Current Age", value=58, min_value=0, max_value=120, step=1)
     current_year = st.number_input("Current Year", value=2025, min_value=1900, max_value=2100, step=1)
-    current_salary = st.number_input("Current Salary", value=100000.0,
-                                     min_value=0.0, format="%.2f")
-
+    
+    
     # === Contribution Type ===
     st.header("Contribution Type")
-    contrib_type = st.radio("Select how you want to input contributions:",
-                            options=["Amount", "Percent"])
+    contrib_type = st.radio("Select how you want to input contributions:", options=["Amount", "Percent"])
 
-    # === Bucket Data Inputs ===
+    # === Bucket Data Inputs with Explanation ===
     st.header("ESSP Bucket Inputs")
     st.write(
-        f"Below, 'starting_contribution' is interpreted as a "
-        f"{'dollar amount' if contrib_type == 'Amount' else 'decimal fraction for the rate (e.g. 0.03 for 3%)'}."
+        "Please enter the raw numeric values—do not include comma separators. Decimals are allowed.\n\n"
+        "For 'Starting Balance' and 'Starting Contribution Amount' (if using Amount mode), "
+        "enter the full monetary value (e.g., 1000000.56 should be entered as 1000000.56).\n"
+        "For 'Starting Contribution (Decimal Rate)' (if using Percent mode), enter the rate as a decimal fraction (e.g., 0.03 for 3%)."
     )
     if contrib_type == "Amount":
-        default_contributions = [5000, 3000, 7500, 1000, 5000, 2000]
+        # Use float defaults with two decimals
+        default_contributions = [5000.00, 3000.00, 7500.00, 1000.00, 5000.00, 2000.00]
         contrib_label = "Starting Contribution Amount"
     else:
-        # Updated defaults (rounded to two decimals) for Percent mode
         default_contributions = [0.05, 0.03, 0.08, 0.01, 0.05, 0.02]
         contrib_label = "Starting Contribution (Decimal Rate)"
-    
+
     default_data = {
         "name": ["Bucket 1", "Bucket 2", "Bucket 3", "Bucket 4", "Bucket 5", "Retirement Bucket"],
         "starting_balance": [30000.00, 20000.00, 40000.00, 8000.00, 25000.00, 15000.00],
@@ -155,7 +149,7 @@ def main():
     }
     default_bucket_df = pd.DataFrame(default_data)
 
-    # In the data editor, we now do not force any display format so that input remains flexible.
+    # Do not set a forced format in the data editor so that full precision can be entered.
     bucket_df = st.data_editor(
         default_bucket_df,
         key="bucket_data_editor",
@@ -165,22 +159,24 @@ def main():
             "starting_contribution": st.column_config.NumberColumn(contrib_label),
         }
     )
-    st.markdown("All numeric columns must be valid numbers; no text or blank cells.")
+    st.markdown("Ensure that all numeric cells contain valid numbers; no text or blank cells are allowed.")
 
     # === Run Calculation ===
     if st.button("Run Calculation"):
-        # Convert columns to numeric
+        # Convert specific columns to numeric
         for col in ["starting_balance", "starting_contribution", "payout_year"]:
             bucket_df[col] = pd.to_numeric(bucket_df[col], errors="coerce")
         invalid_df = bucket_df[bucket_df[["starting_balance", "starting_contribution", "payout_year"]].isna().any(axis=1)]
         if not invalid_df.empty:
-            st.error(f"Some rows have invalid numeric values:\n{invalid_df}")
+            st.error(f"Some rows contain invalid numeric values:\n{invalid_df}")
             st.stop()
         invalid_values = bucket_df.query("starting_balance < 0 or starting_contribution < 0 or payout_year <= 0")
         if not invalid_values.empty:
-            st.error("One or more rows have invalid values. "
-                     " - Starting balance and contribution must be >= 0.\n"
-                     " - Payout year must be > 0.\n\n" + str(invalid_values))
+            st.error(
+                "One or more rows have invalid values.\n"
+                " - Starting balance and contribution must be >= 0.\n"
+                " - Payout year must be > 0.\n\n" + str(invalid_values)
+            )
             st.stop()
 
         df_balances, df_payouts = run_calculation(
@@ -195,8 +191,8 @@ def main():
             contrib_type=contrib_type
         )
 
-        # ---- FORCE FORMATTING ON OUTPUT ----
-        # Format year-by-year balances: Year and Age as integers; monetary columns with commas and two decimals.
+        # ---- FORCE FORMATTING ON OUTPUT (Using Pandas' Styler) ----
+        # Format year-by-year balances: Year and Age as integers; other columns as monetary values with commas and two decimals.
         format_dict_bal = {"Year": "{:.0f}", "Age": "{:.0f}"}
         for col in df_balances.columns:
             if col not in ["Year", "Age"]:
@@ -205,6 +201,7 @@ def main():
         st.subheader("ESSP Year-by-Year Balances")
         st.dataframe(df_balances_styled, use_container_width=True)
 
+        # Format final payouts: Payout Year as integer; Payout Amount as monetary value.
         df_payouts_styled = df_payouts.style.format({
             "Payout Year": "{:.0f}",
             "Payout Amount": "{:,.2f}"
@@ -227,5 +224,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 

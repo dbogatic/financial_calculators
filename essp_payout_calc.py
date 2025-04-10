@@ -3,8 +3,6 @@ import pandas as pd
 
 def run_calculation(
     cola,
-    pre_return,
-    post_return,
     retirement_age,
     current_age,
     current_year,
@@ -14,16 +12,8 @@ def run_calculation(
 ):
     """
     Calculate year-by-year balances and final payouts for each bucket.
-    
-    For Amount mode:
-      - 'starting_contribution' is interpreted as the dollar amount for the current year,
-        which grows by COLA each year.
-    
-    For Percent mode:
-      - 'starting_contribution' is interpreted as a decimal fraction (e.g. 0.03 for 3%)
-        of current_salary. Each year's contribution is:
-            current_salary * starting_contribution
-        and current_salary grows by COLA each year.
+
+    Each bucket uses its own specific return rate from the `return_rate` column.
     """
     buckets = bucket_df.to_dict(orient="records")
     max_payout_year = max(b["payout_year"] for b in buckets)
@@ -39,6 +29,7 @@ def run_calculation(
             balance = b["starting_balance"]
             sim_year = current_year
             age = current_age
+            return_rate = b["return_rate"]  # Use the specific return rate for this bucket
 
             if contrib_type == "Amount":
                 contrib = b["starting_contribution"]
@@ -48,14 +39,14 @@ def run_calculation(
             while sim_year <= yr and sim_year < b["payout_year"]:
                 if age < retirement_age:
                     if contrib_type == "Amount":
-                        balance = (balance + contrib) * (1 + pre_return)
+                        balance = (balance + contrib) * (1 + return_rate)
                         contrib *= (1 + cola)
                     else:
                         contribution_this_year = local_salary * b["starting_contribution"]
-                        balance = (balance + contribution_this_year) * (1 + pre_return)
+                        balance = (balance + contribution_this_year) * (1 + return_rate)
                         local_salary *= (1 + cola)
                 else:
-                    balance *= (1 + post_return)
+                    balance *= (1 + return_rate)  # Use the same return rate after retirement
                 sim_year += 1
                 age += 1
 
@@ -65,20 +56,19 @@ def run_calculation(
     balances_df = pd.DataFrame(results)
     balances_df["Year"] = balances_df["Year"].astype(int)
     return balances_df, create_payout_df(
-        buckets, cola, pre_return, post_return, retirement_age,
-        current_age, current_year, current_salary, contrib_type
+        buckets, cola, retirement_age, current_age, current_year, current_salary, contrib_type
     )
 
-def create_payout_df(buckets, cola, pre_return, post_return, retirement_age,
-                     current_age, current_year, current_salary, contrib_type):
+def create_payout_df(buckets, cola, retirement_age, current_age, current_year, current_salary, contrib_type):
     """
-    Compute the final payout for each bucket using the same simulation logic.
+    Compute the final payout for each bucket using the specific return rate for each bucket.
     """
     payouts = []
     for b in buckets:
         balance = b["starting_balance"]
         sim_year = current_year
         age = current_age
+        return_rate = b["return_rate"]  # Use the specific return rate for this bucket
 
         if contrib_type == "Amount":
             contrib = b["starting_contribution"]
@@ -88,14 +78,14 @@ def create_payout_df(buckets, cola, pre_return, post_return, retirement_age,
         while sim_year < b["payout_year"]:
             if age < retirement_age:
                 if contrib_type == "Amount":
-                    balance = (balance + contrib) * (1 + pre_return)
+                    balance = (balance + contrib) * (1 + return_rate)
                     contrib *= (1 + cola)
                 else:
                     contribution_this_year = local_salary * b["starting_contribution"]
-                    balance = (balance + contribution_this_year) * (1 + pre_return)
+                    balance = (balance + contribution_this_year) * (1 + return_rate)
                     local_salary *= (1 + cola)
             else:
-                balance *= (1 + post_return)
+                balance *= (1 + return_rate)  # Use the same return rate after retirement
             sim_year += 1
             age += 1
 
@@ -114,13 +104,10 @@ def main():
     st.header("Global Inputs")
     current_salary = st.number_input("Current Salary", value=100000.0, min_value=0.0)
     cola = st.number_input("COLA (annual growth rate)", value=0.03, min_value=0.0, max_value=1.0, step=0.01)
-    pre_return = st.number_input("Pre-Retirement Return", value=0.07, min_value=0.0, max_value=1.0, step=0.01)
-    post_return = st.number_input("Post-Retirement Return", value=0.05, min_value=0.0, max_value=1.0, step=0.01)
     retirement_age = st.number_input("Retirement Age", value=62, min_value=0, max_value=120, step=1)
     current_age = st.number_input("Current Age", value=58, min_value=0, max_value=120, step=1)
     current_year = st.number_input("Current Year", value=2025, min_value=1900, max_value=2100, step=1)
-    
-    
+
     # === Contribution Type ===
     st.header("Contribution Type")
     contrib_type = st.radio("Select how you want to input contributions:", options=["Amount", "Percent"])
@@ -128,11 +115,12 @@ def main():
     # === Bucket Data Inputs with Explanation ===
     st.header("ESSP Bucket Inputs")
     st.write(
-        "Please enter the raw numeric values—do not include comma separators. Decimals are allowed.\n\n"
-        "For 'Starting Balance' and 'Starting Contribution Amount' (if using Amount mode), "
-        "enter the full monetary value (e.g., 1000000.56 should be entered as 1000000.56).\n"
-        "For 'Starting Contribution (Decimal Rate)' (if using Percent mode), enter the rate as a decimal fraction (e.g., 0.03 for 3%)."
-    )
+    "Please enter the raw numeric values—do not include comma separators. Decimals are allowed.\n\n"
+    "For 'Starting Balance' and 'Starting Contribution Amount' (if using Amount mode), "
+    "enter the full monetary value (e.g., 1000000.56 should be entered as 1000000.56).\n"
+    "For 'Return Rate' (in both modes), enter the rate as a decimal fraction (e.g., 0.07 for 7%).\n"
+    "For 'Starting Contribution (Decimal Rate)' (if using Percent mode), enter the rate as a decimal fraction (e.g., 0.03 for 3%)."
+)
     if contrib_type == "Amount":
         # Use float defaults with two decimals
         default_contributions = [5000.00, 3000.00, 7500.00, 1000.00, 5000.00, 2000.00]
@@ -145,7 +133,8 @@ def main():
         "name": ["Bucket 1", "Bucket 2", "Bucket 3", "Bucket 4", "Bucket 5", "Retirement Bucket"],
         "starting_balance": [30000.00, 20000.00, 40000.00, 8000.00, 25000.00, 15000.00],
         "starting_contribution": default_contributions,
-        "payout_year": [2032, 2033, 2034, 2035, 2036, 2030]
+        "payout_year": [2032, 2033, 2034, 2035, 2036, 2030],
+        "return_rate": [0.07, 0.06, 0.08, 0.05, 0.07, 0.04]  # Example return rates for each bucket
     }
     default_bucket_df = pd.DataFrame(default_data)
 
@@ -157,6 +146,7 @@ def main():
             "payout_year": st.column_config.NumberColumn("Payout Year", format="%d"),
             "starting_balance": st.column_config.NumberColumn("Starting Balance"),
             "starting_contribution": st.column_config.NumberColumn(contrib_label),
+            "return_rate": st.column_config.NumberColumn("Return Rate (Decimal)", format="%.2f"),
         }
     )
     st.markdown("Ensure that all numeric cells contain valid numbers; no text or blank cells are allowed.")
@@ -164,25 +154,23 @@ def main():
     # === Run Calculation ===
     if st.button("Run Calculation"):
         # Convert specific columns to numeric
-        for col in ["starting_balance", "starting_contribution", "payout_year"]:
+        for col in ["starting_balance", "starting_contribution", "payout_year", "return_rate"]:
             bucket_df[col] = pd.to_numeric(bucket_df[col], errors="coerce")
-        invalid_df = bucket_df[bucket_df[["starting_balance", "starting_contribution", "payout_year"]].isna().any(axis=1)]
+        invalid_df = bucket_df[bucket_df[["starting_balance", "starting_contribution", "payout_year", "return_rate"]].isna().any(axis=1)]
         if not invalid_df.empty:
             st.error(f"Some rows contain invalid numeric values:\n{invalid_df}")
             st.stop()
-        invalid_values = bucket_df.query("starting_balance < 0 or starting_contribution < 0 or payout_year <= 0")
+        invalid_values = bucket_df.query("starting_balance < 0 or starting_contribution < 0 or payout_year <= 0 or return_rate < 0")
         if not invalid_values.empty:
             st.error(
                 "One or more rows have invalid values.\n"
-                " - Starting balance and contribution must be >= 0.\n"
+                " - Starting balance, contribution, and return rate must be >= 0.\n"
                 " - Payout year must be > 0.\n\n" + str(invalid_values)
             )
             st.stop()
 
         df_balances, df_payouts = run_calculation(
             cola=cola,
-            pre_return=pre_return,
-            post_return=post_return,
             retirement_age=retirement_age,
             current_age=current_age,
             current_year=current_year,
@@ -224,7 +212,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-

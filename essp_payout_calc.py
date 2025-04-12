@@ -98,7 +98,7 @@ def create_payout_df(buckets, cola, retirement_age, current_age, current_year, c
     return pd.DataFrame(payouts)
 
 def main():
-    st.title("ESSP Bucket Growth Calculator")
+    st.title("Bucket Growth Calculator")
 
     # === Global Inputs (raw numeric entry) ===
     st.header("Global Inputs")
@@ -113,7 +113,7 @@ def main():
     contrib_type = st.radio("Select how you want to input contributions:", options=["Amount", "Percent"])
 
     # === Bucket Data Inputs with Explanation ===
-    st.header("ESSP Bucket Inputs")
+    st.header("Bucket Inputs")
     st.write(
     "Please enter the raw numeric values—do not include comma separators. Decimals are allowed.\n\n"
     "For 'Starting Balance' and 'Starting Contribution Amount' (if using Amount mode), "
@@ -186,7 +186,7 @@ def main():
             if col not in ["Year", "Age"]:
                 format_dict_bal[col] = "{:,.2f}"
         df_balances_styled = df_balances.style.format(format_dict_bal)
-        st.subheader("ESSP Year-by-Year Balances")
+        st.subheader("Year-by-Year Balances")
         st.dataframe(df_balances_styled, use_container_width=True)
 
         # Format final payouts: Payout Year as integer; Payout Amount as monetary value.

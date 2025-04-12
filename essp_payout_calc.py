@@ -194,7 +194,7 @@ def main():
             "Payout Year": "{:.0f}",
             "Payout Amount": "{:,.2f}"
         })
-        st.subheader("ESSP Final Payouts")
+        st.subheader("Final Payouts")
         st.dataframe(df_payouts_styled, use_container_width=True)
 
         st.download_button(
